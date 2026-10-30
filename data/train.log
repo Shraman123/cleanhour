@@ -1,0 +1,29 @@
+[codecarbon INFO @ 15:24:59] offline tracker init
+[codecarbon WARNING @ 15:24:59] Multiple instances of codecarbon are allowed to run at the same time.
+epoch 1/10  loss 0.893  test acc 0.644  75s
+epoch 2/10  loss 0.755  test acc 0.715  153s
+epoch 3/10  loss 0.514  test acc 0.705  230s
+epoch 4/10  loss 0.421  test acc 0.726  304s
+epoch 5/10  loss 0.449  test acc 0.766  386s
+epoch 6/10  loss 0.383  test acc 0.829  469s
+epoch 7/10  loss 0.261  test acc 0.851  551s
+epoch 8/10  loss 0.224  test acc 0.862  635s
+epoch 9/10  loss 0.134  test acc 0.896  724s
+epoch 10/10  loss 0.060  test acc 0.905  820s
+{
+  "model": "VGG-style CNN (1.2M params), CIFAR-10",
+  "device": "NVIDIA GeForce GTX 1650",
+  "epochs": 10,
+  "test_accuracy": 0.9055,
+  "started": "2026-10-30T15:25:02",
+  "duration_s": 820.0,
+  "energy_kwh": 0.017563,
+  "gpu_kwh": 0.004966,
+  "cpu_kwh": 0.010198,
+  "ram_kwh": 0.002399,
+  "avg_gpu_w": 21.3,
+  "avg_cpu_w": 42.5,
+  "codecarbon_version": "3.2.1",
+  "codecarbon_india_kg": 0.01253
+}
+EXIT 0

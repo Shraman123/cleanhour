@@ -18,9 +18,14 @@ Does it work? I backtested it on every hour of the month. The scheduler could on
 → perfect hindsight would have managed 27.0%
 → the price paid per kWh fell 76%
 
+Then a real job. I trained a CNN on CIFAR-10 on my own laptop (GTX 1650, 13.7 min, 90.6% accuracy) and measured it with CodeCarbon: 17.6 Wh.
+→ at noon: 8.8 g CO₂
+→ at 9 pm: 13.1 g CO₂
+That's tiny for one laptop. But shift 1 MWh of AI compute (about one 8-GPU server for 4 days) from 9 pm to noon and you avoid 246 kg of CO₂ and save ₹7,330 at exchange prices.
+
 India's solar cycle is so regular that a simple "same hour last week" forecast gets almost all of the possible gain. Data centres and AI startups are mostly leaving this on the table.
 
-Caveats: these are national averages and direct emissions only, and most offices pay a flat tariff, not exchange prices. Next step: state-level grids.
+Caveats: these are national averages and direct emissions only. Laptop GPU power is measured but CPU power is estimated (Windows has no power counters), and most offices pay a flat tariff, not exchange prices. Next step: state-level grids.
 
 Live dashboard: https://cleanhour.vercel.app
 Code (open source): https://github.com/Shraman123/cleanhour

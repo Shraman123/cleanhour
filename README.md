@@ -16,7 +16,7 @@ India's grid swings hard every day. At noon, solar meets a big share of demand. 
 
 - A kWh used at noon carries **33% less CO₂** than one used at 9 pm. On the exchange it costs **81% less**.
 - **Backtest:** a 2-hour job was submitted at every hour of the month, and the scheduler saw only the past. It cut CO₂ by **26.7%** against starting immediately. With perfect hindsight the best possible was 27.0%. The price paid fell 76%, from ₹6.83 to ₹1.64 per kWh.
-- **Real job:** a measured CIFAR-10 training run on a GTX 1650 laptop is pending (see `experiments/`).
+- **Real job:** a CIFAR-10 CNN trained on a GTX 1650 laptop (10 epochs, 90.6% test accuracy, 13.7 min) used **17.6 Wh**, measured with CodeCarbon. At noon's grid mix that is **8.8 g CO₂**; at 9 pm it is **13.1 g**. Scaled to 1 MWh of compute, moving from 9 pm to noon avoids **246 kg CO₂** and saves **₹7,330** at exchange prices.
 
 ## Install and use
 
@@ -40,7 +40,7 @@ python -m cleanhour report                     # backtest + rebuild site/data.js
 
 ## Laptop experiment
 
-`experiments/laptop_train.py` trains a 1.2M-parameter CNN on CIFAR-10 on a GTX 1650 laptop, with CodeCarbon recording energy. `experiments/compare.py` prices the measured kWh at each hour of the grid. The job uses the same energy at any hour. Only the CO₂ and price attached to each kWh change.
+`experiments/laptop_train.py` trains a 1.1M-parameter CNN on CIFAR-10 on a GTX 1650 laptop, with CodeCarbon recording energy. `experiments/compare.py` prices the measured kWh at each hour of the grid. In the measured run (`data/experiment.json`, `data/emissions.csv`), the GPU drew 5.0 Wh (average 21 W, measured), the CPU 10.2 Wh (estimated) and RAM 2.4 Wh (estimated). The job uses the same energy at any hour. Only the CO₂ and price attached to each kWh change.
 
 ## Caveats
 

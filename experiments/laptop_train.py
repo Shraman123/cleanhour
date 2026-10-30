@@ -28,7 +28,7 @@ from codecarbon import OfflineEmissionsTracker
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "data" / "cifar10"
-URL = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
+URL = "https://cave.cs.toronto.edu/kriz/cifar-10-python.tar.gz"
 
 
 def load_cifar():
@@ -53,7 +53,7 @@ def load_cifar():
 
 
 class Net(nn.Module):
-    """A ~1.2M-param VGG-style CNN; big enough to keep a GTX 1650 busy."""
+    """A ~1.1M-param VGG-style CNN; big enough to keep a GTX 1650 busy."""
     def __init__(self):
         super().__init__()
         def block(i, o):
@@ -75,10 +75,14 @@ def main():
 
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     xtr, ytr, xte, yte = load_cifar()
-    mean = xtr.mean(axis=(0, 2, 3), keepdims=True); std = xtr.std(axis=(0, 2, 3), keepdims=True)
-    to_t = lambda x: torch.tensor(((x - mean) / std).astype(np.float32))
-    Xtr, Ytr = to_t(xtr), torch.tensor(ytr)
-    Xte, Yte = to_t(xte).to(dev), torch.tensor(yte).to(dev)
+    # Standard CIFAR-10 channel stats. Keep raw uint8 images on the GPU (~180 MB of VRAM) and normalise per batch,
+    # so host RAM never holds a float copy of the dataset.
+    mean = torch.tensor([125.3, 123.0, 113.9], device=dev).view(1, 3, 1, 1)
+    std = torch.tensor([63.0, 62.1, 66.7], device=dev).view(1, 3, 1, 1)
+    Xtr, Ytr = torch.from_numpy(xtr).to(dev), torch.from_numpy(ytr).long().to(dev)
+    Xte, Yte = torch.from_numpy(xte).to(dev), torch.from_numpy(yte).long().to(dev)
+    del xtr, xte
+    norm = lambda x: (x.float() - mean) / std
 
     torch.manual_seed(0)
     model = Net().to(dev)
@@ -94,10 +98,10 @@ def main():
     t0 = time.time()
     for ep in range(args.epochs):
         model.train()
-        perm = torch.randperm(len(Xtr))
+        perm = torch.randperm(len(Xtr), device=dev)
         for i in range(len(Xtr) // args.batch):
             idx = perm[i * args.batch:(i + 1) * args.batch]
-            xb, yb = Xtr[idx].to(dev, non_blocking=True), Ytr[idx].to(dev)
+            xb, yb = norm(Xtr[idx]), Ytr[idx]
             if torch.rand(1).item() < 0.5:
                 xb = xb.flip(3)  # cheap augmentation
             loss = F.cross_entropy(model(xb), yb)
@@ -106,7 +110,7 @@ def main():
             opt.step(); sched.step()
         model.eval()
         with torch.no_grad():
-            acc = sum((model(Xte[j:j + 1000]).argmax(1) == Yte[j:j + 1000]).sum().item()
+            acc = sum((model(norm(Xte[j:j + 1000])).argmax(1) == Yte[j:j + 1000]).sum().item()
                       for j in range(0, len(Xte), 1000)) / len(Xte)
         print(f"epoch {ep + 1}/{args.epochs}  loss {loss.item():.3f}  test acc {acc:.3f}  "
               f"{time.time() - t0:.0f}s", flush=True)
@@ -114,7 +118,7 @@ def main():
     d = tracker.final_emissions_data
 
     out = {
-        "model": "VGG-style CNN (1.2M params), CIFAR-10",
+        "model": "VGG-style CNN (1.1M params), CIFAR-10",
         "device": torch.cuda.get_device_name(0) if dev == "cuda" else "cpu",
         "epochs": args.epochs,
         "test_accuracy": round(acc, 4),

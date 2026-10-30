@@ -36,7 +36,7 @@ def main():
         "cleanest_hour": best["hour"], "dirtiest_hour": worst["hour"],
         "saving_pct": round(100 * (1 - noon["intensity_mean"] / nine["intensity_mean"]), 1),
         "price_saving_pct": round(100 * (1 - noon["price_mean"] / nine["price_mean"]), 1),
-        # Same shift applied to 1 MWh of compute (roughly one 8-GPU server for ~3 days).
+        # Same shift applied to 1 MWh of compute (roughly one 8-GPU server for ~4 days).
         "per_mwh_kg_avoided": round(nine["intensity_mean"] - noon["intensity_mean"], 1),
         "per_mwh_rs_saved": round((nine["price_mean"] - noon["price_mean"]) * 1000),
         "daily_mean_intensity": round(statistics.mean(h["intensity_mean"] for h in hod.values()), 1),

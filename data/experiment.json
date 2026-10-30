@@ -1,0 +1,33 @@
+{
+  "model": "VGG-style CNN (1.1M params), CIFAR-10",
+  "device": "NVIDIA GeForce GTX 1650",
+  "epochs": 10,
+  "test_accuracy": 0.9055,
+  "started": "2026-10-30T15:25:02",
+  "duration_s": 820.0,
+  "energy_kwh": 0.017563,
+  "gpu_kwh": 0.004966,
+  "cpu_kwh": 0.010198,
+  "ram_kwh": 0.002399,
+  "avg_gpu_w": 21.3,
+  "avg_cpu_w": 42.5,
+  "codecarbon_version": "3.2.1",
+  "codecarbon_india_kg": 0.01253,
+  "noon": {
+    "intensity": 500.5,
+    "grams": 8.79,
+    "price": 1.67
+  },
+  "nine_pm": {
+    "intensity": 746.8,
+    "grams": 13.12,
+    "price": 9.0
+  },
+  "cleanest_hour": 12,
+  "dirtiest_hour": 3,
+  "saving_pct": 33.0,
+  "price_saving_pct": 81.4,
+  "per_mwh_kg_avoided": 246.3,
+  "per_mwh_rs_saved": 7330,
+  "daily_mean_intensity": 686.0
+}
