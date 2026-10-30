@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CleanHour — when India's grid is cleanest</title>
+<meta name="description" content="Hour-by-hour carbon intensity of India's electricity grid from Grid-India data, and a scheduler that moves AI jobs into the cleanest, cheapest hours.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='9' fill='%23eda100'/><path d='M16 2v5M16 25v5M2 16h5M25 16h5' stroke='%23eda100' stroke-width='3' stroke-linecap='round'/></svg>">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --band: rgba(42,120,214,0.14); --pick: #1baf7a; --good: #006300;
+  --q1:#cde2fb; --q2:#9ec5f4; --q3:#6da7ec; --q4:#3987e5; --q5:#256abf; --q6:#184f95; --q7:#0d366b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --band: rgba(57,135,229,0.20); --pick: #199e70; --good: #0ca30c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --band: rgba(57,135,229,0.20); --pick: #199e70; --good: #0ca30c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1040px; margin: 0 auto; padding: 32px 16px 80px; }
+header.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 40px; }
+.brand { font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 22px; height: 22px; }
+.top nav { display: flex; gap: 16px; font-size: 14px; }
+a { color: var(--s1); }
+h1 { font-size: clamp(30px, 5.4vw, 52px); line-height: 1.08; letter-spacing: -0.025em; margin: 0 0 16px; max-width: 20ch; }
+h2 { font-size: 22px; letter-spacing: -0.01em; margin: 0 0 4px; }
+.lede { font-size: 18px; color: var(--ink-2); max-width: 62ch; margin: 0 0 32px; }
+.sub { color: var(--ink-2); margin: 0 0 20px; max-width: 70ch; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 56px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.tile .k { font-size: 13px; color: var(--ink-2); }
+.tile .v { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin: 4px 0 2px; }
+.tile .n { font-size: 13px; color: var(--muted); }
+section { margin-bottom: 56px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 18px 12px; position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart .lbl { fill: var(--ink-2); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--ink-2); margin: 0 0 10px; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.legend i.sw { height: 12px; width: 12px; border-radius: 3px; }
+.ramp { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); margin-bottom: 10px; }
+.ramp span.bar { display: flex; height: 10px; width: 160px; border-radius: 3px; overflow: hidden; }
+.ramp span.bar b { flex: 1; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+.tip { position: absolute; pointer-events: none; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12); white-space: nowrap; opacity: 0; transition: opacity .08s; z-index: 5; }
+.tip strong { font-size: 15px; }
+.tip .r { color: var(--ink-2); }
+pre { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+  overflow-x: auto; font: 13px/1.6 ui-monospace, "Cascadia Code", Consolas, monospace; margin: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--grid); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--ink-2); font-weight: 600; font-size: 13px; }
+.good { color: var(--good); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+details { margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+details summary { cursor: pointer; }
+.exp { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 760px) { .exp { grid-template-columns: 1fr; } }
+.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cmp .tile .v { font-size: 28px; }
+ul.notes { padding-left: 20px; color: var(--ink-2); max-width: 75ch; }
+ul.notes li { margin-bottom: 6px; }
+footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--grid); padding-top: 18px; }
+#heat, #profile, #forecast { overflow-x: auto; }
+@media (max-width: 760px) {
+  .top nav a:not(:last-of-type) { display: none; }
+  #heat svg, #profile svg, #forecast svg { min-width: 720px; }
+  .exp .cmp { grid-template-columns: 1fr 1fr; }
+}
+.themebtn { background: none; border: 1px solid var(--border); color: var(--ink-2); border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="8" fill="var(--s4)"/><path d="M16 2v5M16 25v5M2 16h5M25 16h5" stroke="var(--s4)" stroke-width="3" stroke-linecap="round"/></svg>CleanHour</div>
+    <nav><a href="#heatmap">Data</a><a href="#scheduler">Scheduler</a><a href="#laptop">Experiment</a><a href="#method">Method</a><a href="https://github.com/Shraman123/cleanhour">GitHub</a><button class="themebtn" id="theme" type="button">Theme</button></nav>
+  </header>
+
+  <h1 id="headline">India's grid is cleanest at noon.</h1>
+  <p class="lede" id="lede">Grid-India publishes all-India generation by fuel every 15 minutes. CleanHour turns that into carbon intensity per hour, and schedules heavy AI jobs into the cleanest (and, on the power exchange, cheapest) window.</p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section id="heatmap">
+    <h2>Every hour of the last 30 days</h2>
+    <p class="sub" id="heat-sub">Each cell is one hour. Darker means more CO₂ per kWh. The pale band through the middle of every day is solar.</p>
+    <div class="card chart">
+      <div class="ramp"><span>Cleaner</span><span class="bar"><b style="background:var(--q1)"></b><b style="background:var(--q2)"></b><b style="background:var(--q3)"></b><b style="background:var(--q4)"></b><b style="background:var(--q5)"></b><b style="background:var(--q6)"></b><b style="background:var(--q7)"></b></span><span>Dirtier</span><span id="ramp-range" style="color:var(--muted)"></span></div>
+      <div id="heat"></div>
+      <div class="tip"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The average day</h2>
+    <p class="sub">Mean carbon intensity by hour of day, with the 10th–90th percentile range across the month.</p>
+    <div class="card chart">
+      <div class="legend"><span><i style="background:var(--s1)"></i>Mean gCO₂/kWh</span><span><i class="sw" style="background:var(--band)"></i>10th–90th percentile</span></div>
+      <div id="profile"></div>
+      <div class="tip"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="grid2">
+      <div>
+        <h2>Why: what's generating</h2>
+        <p class="sub">Average all-India generation by hour, GW.</p>
+        <div class="card chart">
+          <div class="legend"><span><i class="sw" style="background:var(--s1)"></i>Coal &amp; lignite</span><span><i class="sw" style="background:var(--s2)"></i>Solar</span><span><i class="sw" style="background:var(--s3)"></i>Wind, hydro, nuclear</span><span><i class="sw" style="background:var(--s4)"></i>Gas &amp; other</span></div>
+          <div id="mix"></div>
+          <div class="tip"></div>
+        </div>
+      </div>
+      <div>
+        <h2>And it's cheaper</h2>
+        <p class="sub">Average IEX Day-Ahead Market price by hour, ₹/kWh.</p>
+        <div class="card chart">
+          <div class="legend"><span><i class="sw" style="background:var(--s4)"></i>₹/kWh, IEX DAM clearing price</span></div>
+          <div id="price"></div>
+          <div class="tip"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="scheduler">
+    <h2>The scheduler</h2>
+    <p class="sub">Give it a job length and a deadline. It forecasts the next 24 hours from the same hour over the past week, uses real IEX prices where the day-ahead market has already cleared, and starts the job in the best window.</p>
+    <div class="card chart" style="margin-bottom:16px">
+      <div class="legend"><span><i class="sw" style="background:var(--q4)"></i>Forecast gCO₂/kWh, next 24h</span><span><i class="sw" style="background:var(--pick)"></i>Chosen 2-hour window</span></div>
+      <div id="forecast"></div>
+      <div class="tip"></div>
+    </div>
+    <pre><code>$ python -m cleanhour plan --hours 2 --kwh 50
+Best window : Fri 30 Oct 11:00 -> 13:00  ~511 gCO2/kWh, Rs 0.88/kWh
+
+$ python -m cleanhour run --hours 2 --within 24 -- python train.py
+[cleanhour] cleanest 2h window starts Sat 11:00 (~506 gCO2/kWh); waiting 0.8h
+[cleanhour] starting: python train.py</code></pre>
+    <h2 style="margin-top:32px">Does the forecast work? Backtest</h2>
+    <p class="sub" id="bt-sub">A job was submitted at every hour of the month. The scheduler could only see the past. We then scored the window it picked using what actually happened.</p>
+    <div class="card table-wrap"><table id="bt"></table></div>
+  </section>
+
+  <section id="laptop">
+    <h2>One real job, measured</h2>
+    <p class="sub" id="exp-sub"></p>
+    <div class="exp">
+      <div class="card table-wrap"><table id="exp-table"></table></div>
+      <div class="cmp" id="exp-cmp"></div>
+    </div>
+  </section>
+
+  <section id="method">
+    <h2>Method &amp; caveats</h2>
+    <ul class="notes" id="notes">
+      <li><b>Data.</b> Grid-India (NLDC) daily Power Supply Position reports, "TimeSeries" sheet: all-India MW by fuel every 15 minutes. Prices: IEX Day-Ahead Market hourly clearing price (MCP).</li>
+      <li><b>Intensity.</b> Direct combustion only. Coal and lignite at 0.96 tCO₂/MWh (CEA CO₂ Baseline Database, operating margin), gas at 0.45. Solar, wind, hydro and nuclear count as zero. Storage discharge counts as zero to avoid double counting. "Others" also counts as zero. Lifecycle factors would raise every hour slightly but barely change the shape.</li>
+      <li><b>National average.</b> This is the all-India mix. A specific data centre's state grid and power contracts will differ.</li>
+      <li><b>Laptop energy.</b> GPU power is measured through NVML. CPU and RAM are CodeCarbon estimates, because Windows exposes no RAPL counters. The job uses the same kWh at any hour; only the CO₂ and price per kWh change.</li>
+      <li><b>Price.</b> The DAM price is what a large consumer buying on the exchange pays. A laptop on a flat home tariff pays the same at every hour.</li>
+    </ul>
+  </section>
+
+  <footer id="foot">Built with public data from Grid-India and IEX. Code: <a href="https://github.com/Shraman123/cleanhour">github.com/Shraman123/cleanhour</a></footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

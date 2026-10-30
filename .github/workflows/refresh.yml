@@ -1,0 +1,32 @@
+name: refresh-data
+
+# Grid-India posts the previous day's PSP report around 09:30-10:00 IST and the
+# IEX day-ahead market clears around 13:00 IST. Refresh after both.
+on:
+  schedule:
+    - cron: "0 9 * * *"   # 14:30 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest -q
+      - run: python -m cleanhour fetch --days 30
+        env:
+          TZ: Asia/Kolkata
+      - name: commit
+        run: |
+          git config user.name "cleanhour-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/hourly.csv data/prices.csv data/grid_15min.csv site/data.json
+          git diff --cached --quiet || git commit -m "data: refresh $(date -u +%F)"
+          git push

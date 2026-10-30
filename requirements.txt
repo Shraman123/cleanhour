@@ -1,0 +1,4 @@
+xlrd>=2.0
+# experiments only
+# torch
+# codecarbon>=3.0
