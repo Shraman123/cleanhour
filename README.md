@@ -59,6 +59,6 @@ site/           static dashboard (index.html, app.js, data.json) deployed on Ver
 tests/          parser checked against a real PSP report, scheduler and forecast unit tests
 ```
 
-A GitHub Action refreshes the data every day at 14:30 IST.
+`scripts/refresh.sh` refreshes the data, pushes and redeploys. It runs from a local machine because Grid-India resets connections from GitHub Actions' US runners. CI runs the tests on every push.
 
 Data: [Grid-India](https://grid-india.in/en/reports/daily-psp-report) and [IEX](https://www.iexindia.com/market-data/day-ahead-market/market-snapshot). Emission factor: [CEA CO₂ Baseline Database](https://cea.nic.in/cdm-co2-baseline-database/). MIT licensed.
